@@ -241,6 +241,16 @@ footer{color:var(--muted); font-size:.95rem; padding:0 0 2rem}
 @media (prefers-reduced-motion: reduce){ .lid,.fill,.card .in,.bars-jail{transition:none}
   .box,.loot,.plate,.mark,.inside{transition:none !important; animation:none !important}
   .box.prize.open .spark{animation:none; opacity:1; transform:none} .box.shake svg{animation:none} .confetti{display:none} }
+/* celular: juego 1 en una columna y barra de ajustes más compacta (no afecta a pantallas grandes) */
+@media (max-width:780px){ .cols{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:640px){
+  .arena{grid-template-columns:minmax(0,1fr)}
+  .arena .vs{justify-self:center}
+  .player{min-height:0}
+  .tools .wrap{gap:.35rem .8rem; padding-block:.4rem}
+  .chip{min-height:40px; padding:.2rem .7rem; font-size:.95rem}
+  .lbl{font-size:.85rem}
+}
 </style>
 </head>
 <body>
