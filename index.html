@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game On! Play, think and decide in English</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EAF0F8; --surface:#FFFFFF; --ink:#0E1B3D; --muted:#4A5675; --line:#B9C6DC;
+  --stage:#F5B700; --stage-ink:#0E1B3D;
+  --a:#D9531E; --a-soft:#FCE3D8;     /* jugador A: naranja */
+  --b:#00796B; --b-soft:#D3EFEA;     /* jugador B: verde azulado */
+  --win:#1E8E3E; --lose:#C62828;
+  --focus:#1D5FD6; --box:#1F3C88; --box-lid:#2B52B5;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg:#0E1B3D; --surface:#16264F; --ink:#F2F5FB; --muted:#B8C3DA; --line:#33477A;
+    --stage:#FFC83D; --stage-ink:#0E1B3D;
+    --a:#FF8A5B; --a-soft:#4A2A22; --b:#4FD1BC; --b-soft:#163F3B;
+    --win:#6BD98A; --lose:#FF8A80; --focus:#8DB4FF; --box:#2B52B5; --box-lid:#3D67D1;
+  }
+}
+[data-contrast="high"]{
+  color-scheme: dark;
+  --bg:#000; --surface:#000; --ink:#FFFF00; --muted:#FFFFFF; --line:#FFFF00;
+  --stage:#FFFF00; --stage-ink:#000;
+  --a:#FFFFFF; --a-soft:#000; --b:#00FFFF; --b-soft:#000;
+  --win:#00FF00; --lose:#FF6B6B; --focus:#00FFFF; --box:#000; --box-lid:#000;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{font-size:calc(100% * var(--scale,1))}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:"Atkinson Hyperlegible", Verdana, "Segoe UI", sans-serif; font-size:1.125rem; line-height:1.55}
+:focus-visible{outline:4px solid var(--focus); outline-offset:3px; border-radius:6px}
+.wrap{max-width:min(96vw,1560px); margin:0 auto; padding:0 1.25rem}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* barra de accesibilidad */
+.tools{background:var(--surface); border-bottom:2px solid var(--line)}
+.tools .wrap{display:flex; flex-wrap:wrap; gap:.6rem 1.2rem; align-items:center; padding-block:.6rem}
+.group{display:flex; gap:.4rem; align-items:center; flex-wrap:wrap}
+.lbl{color:var(--muted); font-size:.95rem}
+.chip{font:inherit; font-size:1rem; background:transparent; color:var(--ink); border:2px solid var(--line); border-radius:999px; padding:.3rem .85rem; cursor:pointer; min-height:44px}
+.chip[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+[data-contrast="high"] .chip[aria-pressed="true"]{background:#FFFF00; color:#000}
+.chip:disabled{opacity:.5; cursor:not-allowed; border-style:dashed}
+
+/* cabecera */
+.hero{padding:2rem 0 .6rem; display:flex; flex-wrap:wrap; align-items:flex-end; gap:.4rem 1.4rem}
+.hero h1{font-size:clamp(2.8rem,8vw,4.6rem); line-height:.95; margin:0; letter-spacing:-.02em}
+.hero h1 span{display:inline-block; background:var(--stage); color:var(--stage-ink); padding:.02em .25em .08em; border-radius:.18em; transform:rotate(-3deg); margin-left:.1em}
+.hero p{margin:0; color:var(--muted); max-width:44ch; font-size:1.2rem}
+
+/* pestañas */
+.tabs{display:flex; gap:.5rem; margin:1.4rem 0 0; flex-wrap:wrap}
+.tab{font:inherit; font-weight:700; font-size:1.1rem; cursor:pointer; min-height:52px; border:2px solid var(--line); border-bottom:none; background:transparent; color:var(--muted); padding:.6rem 1.2rem; border-radius:14px 14px 0 0}
+.tab[aria-selected="true"]{background:var(--surface); color:var(--ink)}
+.panel{background:var(--surface); border:2px solid var(--line); border-radius:0 14px 14px 14px; padding:1.6rem; margin-bottom:2rem}
+h2{font-size:1.8rem; margin:0 0 .3rem}
+h3{font-size:1.3rem; margin:1.8rem 0 .5rem}
+.story{max-width:66ch}
+.story p{margin:.4rem 0}
+.gloss{color:var(--muted); font-style:italic; font-size:1rem}
+.goal{display:inline-block; border:3px solid var(--stage); border-radius:12px; padding:.4rem .9rem; font-weight:700; margin:.6rem 0}
+
+/* pasos */
+.steps{display:flex; gap:.4rem; list-style:none; padding:0; margin:1.2rem 0; flex-wrap:wrap; counter-reset:s}
+.steps li{counter-increment:s; display:flex; align-items:center; gap:.45rem; padding:.35rem .8rem .35rem .4rem; border:2px solid var(--line); border-radius:999px; color:var(--muted); font-size:1rem}
+.steps li::before{content:counter(s); display:grid; place-items:center; width:1.8rem; height:1.8rem; border-radius:50%; border:2px solid var(--line); font-weight:700}
+.steps li.now{border-color:var(--ink); color:var(--ink); font-weight:700}
+.steps li.now::before{background:var(--stage); color:var(--stage-ink); border-color:var(--stage)}
+.steps li.done{opacity:.6}
+.steps li.done::before{content:"✓"}
+
+.btn{font:inherit; font-weight:700; font-size:1.1rem; cursor:pointer; min-height:52px; border-radius:12px; padding:.6rem 1.3rem; border:3px solid var(--ink); background:var(--ink); color:var(--bg)}
+.btn.alt{background:transparent; color:var(--ink)}
+.btn.stage{background:var(--stage); color:var(--stage-ink); border-color:var(--stage)}
+.btn.reset{background:transparent; color:var(--ink); border-style:dashed}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.row{display:flex; flex-wrap:wrap; gap:.7rem; align-items:center; margin:.8rem 0}
+.msg{font-size:1.3rem; font-weight:700; min-height:2em; margin:.6rem 0}
+
+.say{border-left:6px solid var(--stage); padding:.4rem 1rem; margin:1rem 0; max-width:66ch}
+.say strong{display:block}
+.say ul{margin:.2rem 0 0; padding-left:1.2rem}
+.cols{display:grid; grid-template-columns:1.25fr 1fr; gap:1.6rem; align-items:start}
+@media (max-width:780px){ .cols{grid-template-columns:1fr} }
+details{border:2px solid var(--line); border-radius:12px; padding:.6rem 1rem; margin:1rem 0}
+summary{font-weight:700; cursor:pointer; min-height:36px}
+
+/* ===== JUEGO 1 ===== */
+.arena{display:grid; grid-template-columns:1fr auto 1fr; gap:1rem; align-items:stretch; margin:1rem 0}
+.vs{align-self:center; font-weight:700; font-size:1.6rem; color:var(--muted)}
+.player{border:3px solid var(--line); border-radius:16px; padding:1rem; text-align:center; position:relative; min-height:250px; display:flex; flex-direction:column; align-items:center; gap:.6rem}
+.player.pa{border-color:var(--a); background:var(--a-soft)}
+.player.pb{border-color:var(--b); background:var(--b-soft)}
+.player .name{font-weight:700; font-size:1.3rem}
+.pa .name{color:var(--a)} .pb .name{color:var(--b)}
+.face{font-size:3.4rem; line-height:1}
+.card{width:150px; height:96px; perspective:600px}
+.card .in{position:relative; width:100%; height:100%; transition:transform .6s; transform-style:preserve-3d}
+.card.flip .in{transform:rotateY(180deg)}
+.card .f,.card .k{position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; display:grid; place-items:center; font-weight:700; font-size:1.15rem; border:3px solid var(--ink)}
+.card .f{background:repeating-linear-gradient(45deg, var(--surface) 0 10px, var(--line) 10px 20px); color:var(--ink)}
+.card .k{transform:rotateY(180deg); background:var(--surface)}
+.years{font-size:2.6rem; font-weight:700; font-variant-numeric:tabular-nums; min-height:3.2rem}
+.years small{font-size:1rem; font-weight:400; display:block; color:var(--muted)}
+.bars-jail{display:flex; gap:6px; height:0; overflow:hidden; transition:height .5s}
+.bars-jail.on{height:46px}
+.bars-jail i{width:7px; background:var(--ink); border-radius:3px}
+.choice{display:grid; gap:.5rem; width:100%}
+.choice .btn{width:100%}
+.hide-note{font-size:1rem; color:var(--muted)}
+.cover{position:absolute; inset:0; border-radius:13px; background:var(--surface); display:grid; place-items:center; text-align:center; padding:1rem; font-weight:700; color:var(--muted)}
+
+table.matrix{border-collapse:collapse; width:100%; max-width:520px; font-size:1rem}
+.matrix th,.matrix td{border:2px solid var(--line); padding:.55rem; text-align:center}
+.matrix td.hit{background:var(--stage); color:var(--stage-ink); font-weight:700; outline:3px solid var(--ink)}
+.matrix .ya{color:var(--a); font-weight:700} .matrix .yb{color:var(--b); font-weight:700}
+.matrix td.hit .ya,.matrix td.hit .yb{color:var(--stage-ink)}
+.history{border-collapse:collapse; width:100%; font-size:1rem; margin-top:.4rem}
+.history th,.history td{border-bottom:1px solid var(--line); padding:.35rem .4rem; text-align:left}
+.totals{display:flex; gap:1rem; flex-wrap:wrap; margin:.6rem 0}
+.totals div{border:2px solid var(--line); border-radius:12px; padding:.4rem .9rem}
+.totals b{font-size:1.6rem; font-variant-numeric:tabular-nums}
+
+/* modo contra el ordenador */
+.cpu{border:2px solid var(--line); border-radius:16px; padding:1.2rem; margin-top:1rem}
+input[type=range]{width:100%; max-width:420px; accent-color:var(--a); height:36px}
+.dots{display:flex; gap:.4rem; flex-wrap:wrap; margin:.6rem 0; min-height:2.2rem}
+.dot{width:2.2rem; height:2.2rem; border-radius:8px; display:grid; place-items:center; font-weight:700; font-size:.9rem; border:2px solid var(--line)}
+.dot.c{background:var(--a); color:#fff; border-color:var(--a)} .dot.s{background:var(--b); color:#fff; border-color:var(--b)}
+[data-contrast="high"] .dot.c,[data-contrast="high"] .dot.s{color:#000}
+
+/* ===== JUEGO 2 ===== */
+.studio{border-radius:16px; padding:1.4rem 1rem 1rem; margin:1rem 0; border:2px solid var(--line);
+  background:radial-gradient(ellipse 30% 70% at 15% 0%, color-mix(in srgb, var(--stage) 35%, transparent), transparent 70%),
+             radial-gradient(ellipse 30% 70% at 85% 0%, color-mix(in srgb, var(--stage) 35%, transparent), transparent 70%)}
+[data-contrast="high"] .studio{background:none}
+.boxes{display:flex; justify-content:center; gap:clamp(.8rem,4vw,2.4rem); flex-wrap:wrap}
+.box{font:inherit; cursor:pointer; background:transparent; border:none; padding:0; color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:.3rem; width:clamp(110px,24vw,170px); border-radius:12px}
+.box svg{width:100%; height:auto; overflow:visible}
+.box .tag{font-weight:700; font-size:1.2rem; padding:0 .5rem; border-radius:8px}
+.box .state{font-size:1rem; min-height:1.5em; font-weight:700}
+.box.mine .tag{background:var(--stage); color:var(--stage-ink)}
+.box.other .tag{outline:3px dashed var(--stage)}
+.box.gone{opacity:.35}
+.boxes:not(.many) .box.gone{opacity:1}
+.boxes:not(.many) .box.gone svg{opacity:.55}
+.boxes:not(.many) .box.gone .tag,.boxes:not(.many) .box.gone .state{color:var(--muted)}
+.box:disabled{cursor:default}
+/* --- cajas más reales y dinámicas --- */
+.boxes:not(.many){container-type:inline-size}
+.boxes:not(.many) .box{transition:transform .25s cubic-bezier(.3,1.6,.5,1); animation:drop .55s cubic-bezier(.3,1.5,.5,1) backwards; animation-delay:calc(var(--i,0) * 90ms)}
+@supports (width:1cqw){ .boxes:not(.many){gap:3cqw} .boxes:not(.many) .box{width:clamp(84px,29cqw,280px)} }
+.boxes:not(.many) .box:not(:disabled):hover,.boxes:not(.many) .box:not(:disabled):focus-visible{transform:translateY(-8px) scale(1.04)}
+.boxes:not(.many) .box.mine,.boxes:not(.many) .box.other{animation:bob 1s ease-in-out 2}
+.box.mine svg{filter:drop-shadow(0 0 7px var(--stage))}
+.lid{transition:transform .65s cubic-bezier(.3,1.5,.5,1); transform-origin:10px 68px}
+.box.open .lid{transform:rotate(-42deg)}
+.box:not(:disabled):hover .lid,.box:not(:disabled):focus-visible .lid{transform:rotate(-9deg)}
+.body{fill:var(--box); stroke:var(--ink); stroke-width:3}
+.lidr{fill:var(--box-lid); stroke:var(--ink); stroke-width:3}
+.bow{fill:var(--stage); stroke:var(--ink); stroke-width:2}
+.plate{fill:var(--stage); stroke:var(--ink); stroke-width:2; transition:opacity .3s}
+.mark{fill:var(--stage-ink); transition:opacity .3s}
+.shadow{fill:#000; opacity:.22}
+.inside{fill:#0a1128; fill:color-mix(in srgb, var(--box) 40%, #000); stroke:var(--ink); stroke-width:2; opacity:0; transition:opacity .25s}
+.box.open .inside{opacity:1}
+.box.open .plate,.box.open .mark{opacity:0}
+.loot{transform:translateY(60px); transition:transform .8s cubic-bezier(.2,1.6,.4,1) .2s}
+.box.prize.open .loot{transform:translateY(-18px)}
+.note{fill:var(--win); stroke:var(--ink); stroke-width:2}
+.euro{fill:var(--stage-ink)}
+.coin{fill:var(--stage); stroke:var(--ink); stroke-width:2}
+.spark{fill:var(--stage); stroke:var(--ink); stroke-width:1; transform-box:fill-box; transform-origin:center; opacity:0; transform:scale(0)}
+.box.prize.open .spark{animation:pop .7s .35s both}
+.box.shake svg{animation:shake .5s .1s}
+[data-contrast="high"] .shade,[data-contrast="high"] .shadow{display:none}
+[data-contrast="high"] .inside{fill:#000}
+.studio{position:relative}
+.confetti{position:absolute; inset:0; overflow:hidden; pointer-events:none}
+.conf{position:absolute; top:40%; left:50%; width:10px; height:14px; border-radius:2px; opacity:0; animation:conf 1.5s cubic-bezier(.2,.8,.4,1) forwards}
+.conf.c0{background:var(--stage)} .conf.c1{background:var(--win)} .conf.c2{background:var(--b)} .conf.c3{background:var(--a)}
+@keyframes drop{from{transform:translateY(-40px) scale(.9); opacity:0}}
+@keyframes bob{0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)}}
+@keyframes pop{0%{transform:scale(0); opacity:0} 60%{transform:scale(1.4); opacity:1} 100%{transform:scale(1); opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}}
+@keyframes conf{0%{opacity:1; transform:translate(0,0) rotate(0)} 100%{opacity:0; transform:translate(var(--dx),var(--dy)) rotate(var(--r))}}
+/* pantalla ancha: historia a la izquierda, cajas grandes a la derecha */
+.g2-top{display:block}
+@media (min-width:1150px){
+  .g2-top{display:grid; grid-template-columns:minmax(300px,5fr) minmax(0,7fr); gap:2rem; align-items:start}
+  .g2-top .studio{margin:.4rem 0 1rem}
+  .g2-top .steps{flex-direction:column; align-items:flex-start; margin-top:.8rem}
+}
+.box.prize .state{color:var(--win)}
+/* muchas cajas */
+.boxes.many{gap:.4rem; max-width:760px; margin:0 auto}
+.boxes.many .box{width:52px; gap:0}
+.boxes.many .box svg{display:none}
+.boxes.many .box .tag{font-size:.95rem; width:52px; height:44px; display:grid; place-items:center; background:var(--box); color:#fff; border-radius:8px; padding:0; border:2px solid var(--ink)}
+.boxes.many .box.mine .tag{background:var(--stage); color:var(--stage-ink)}
+.boxes.many .box.other .tag{background:var(--box); color:#fff; outline:4px dashed var(--stage); outline-offset:2px}
+.boxes.many .box.gone .tag{background:transparent; color:var(--muted)}
+.boxes.many .box.prize .tag{background:var(--win); color:#fff}
+.boxes.many .box .state{display:none}
+[data-contrast="high"] .boxes.many .box .tag{color:#FFFF00}
+[data-contrast="high"] .boxes.many .box.mine .tag{background:#FFFF00; color:#000}
+[data-contrast="high"] .boxes.many .box.prize .tag{color:#000}
+[data-contrast="high"] .tree .win + text, [data-contrast="high"] .tree .lose + text{fill:#000 !important}
+
+.score{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; max-width:560px}
+.score div{border:2px solid var(--line); border-radius:12px; padding:.7rem 1rem}
+.score b{font-size:1.9rem; display:block; font-variant-numeric:tabular-nums}
+.bars{display:grid; gap:.8rem; margin:.8rem 0; max-width:640px}
+.bar{display:grid; grid-template-columns:9rem 1fr 4.5rem; gap:.6rem; align-items:center}
+.track{height:34px; border:2px solid var(--line); border-radius:8px; overflow:hidden}
+.fill{height:100%; width:0; transition:width .3s ease}
+.fill.sw{background:var(--b)} .fill.kp{background:var(--a)}
+.num{font-weight:700; text-align:right; font-variant-numeric:tabular-nums}
+.tree{width:100%; max-width:720px; height:auto; margin:.6rem 0}
+.tree text{fill:var(--ink); font-family:inherit; font-size:15px}
+.tree .ln{stroke:var(--muted); stroke-width:2}
+.tree .nd{fill:var(--surface); stroke:var(--ink); stroke-width:2}
+.tree .win{fill:var(--win)} .tree .lose{fill:var(--lose)}
+.why{border:3px solid var(--stage); border-radius:16px; padding:1.2rem 1.4rem; margin-top:1.8rem}
+.why h3{margin-top:0}
+.why .lang{display:flex; gap:.4rem; margin:.4rem 0 .8rem}
+.why ol, .why ul{padding-left:1.3rem}
+.why li{margin:.25rem 0}
+.mediate{background:color-mix(in srgb, var(--stage) 22%, transparent); border-radius:12px; padding:.7rem 1rem; margin:.8rem 0}
+[data-contrast="high"] .mediate{background:none; border:2px dashed var(--stage)}
+.bonus{border:2px dashed var(--line); border-radius:14px; padding:1rem; margin-top:1rem}
+footer{color:var(--muted); font-size:.95rem; padding:0 0 2rem}
+@media (prefers-reduced-motion: reduce){ .lid,.fill,.card .in,.bars-jail{transition:none}
+  .box,.loot,.plate,.mark,.inside{transition:none !important; animation:none !important}
+  .box.prize.open .spark{animation:none; opacity:1; transform:none} .box.shake svg{animation:none} .confetti{display:none} }
+</style>
+</head>
+<body>
+
+<div class="tools" role="region" aria-label="Accessibility tools">
+  <div class="wrap">
+    <div class="group" role="group" aria-label="Text size">
+      <span class="lbl">Text size</span>
+      <button class="chip" data-scale="1" aria-pressed="true">A</button>
+      <button class="chip" data-scale="1.2" aria-pressed="false">A+</button>
+      <button class="chip" data-scale="1.45" aria-pressed="false">A++</button>
+    </div>
+    <div class="group" role="group" aria-label="Story level">
+      <span class="lbl">Story level</span>
+      <button class="chip" data-level="A" aria-pressed="true">Easy</button>
+      <button class="chip" data-level="B" aria-pressed="false">Challenge</button>
+    </div>
+    <button class="chip" id="contrast" aria-pressed="false">High contrast</button>
+    <div class="group" role="group" aria-label="Reading speed">
+      <span class="lbl">Reading speed</span>
+      <button class="chip" data-rate="slow" aria-pressed="false">Slow</button>
+      <button class="chip" data-rate="normal" aria-pressed="true">Normal</button>
+    </div>
+    <button class="chip" id="readBtn">🔊 Read the story</button>
+    <button class="chip" id="pauseBtn" disabled><span aria-hidden="true">⏸</span> Pause</button>
+    <button class="chip" id="timerBtn" aria-label="Start a 5 minute task timer">⏱ 5:00</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <h1>Game <span>On!</span></h1>
+    <p>Play, think and decide in English. Two games where your first idea might be wrong… and maths can prove it.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Games">
+    <button class="tab" role="tab" id="t1" aria-controls="p1" aria-selected="true">Game 1 · Partners in crime</button>
+    <button class="tab" role="tab" id="t2" aria-controls="p2" aria-selected="false" tabindex="-1">Game 2 · Sofia's boxes</button>
+  </div>
+
+  <!-- ================= GAME 1 ================= -->
+  <section class="panel" role="tabpanel" id="p1" aria-labelledby="t1">
+    <h2>Partners in crime</h2>
+    <div class="story">
+      <div data-level-text="A">
+        <p>The police catch two friends, A and B. They are in different rooms and they can't talk.</p>
+        <p>Each friend has two options: <strong>stay silent</strong> or <strong>confess</strong> (tell the police that the other friend did it). The years in prison depend on what <em>both</em> friends decide.</p>
+        <p class="gloss">stay silent = callar · confess = confesar / delatar · prison = cárcel · years = años</p>
+      </div>
+      <div data-level-text="B" hidden>
+        <p>Two partners in crime, A and B, have been arrested and are being questioned in separate rooms, so they cannot agree on a plan.</p>
+        <p>The detective offers each of them the same deal: stay loyal and keep quiet, or confess and blame your partner to get a shorter sentence. The final result depends on both decisions. Will you trust your partner, or protect yourself?</p>
+      </div>
+    </div>
+    <p class="goal">🎯 Goal: spend as few years in prison as possible.</p>
+
+    <div class="cols">
+      <div>
+        <ol class="steps" id="pdSteps" aria-label="Game steps">
+          <li>A chooses</li><li>B chooses</li><li>Reveal</li><li>Talk about it</li>
+        </ol>
+
+        <div class="arena">
+          <div class="player pa" id="playerA">
+            <span class="name">Player A</span>
+            <span class="face" aria-hidden="true">🦊</span>
+            <div class="card" id="cardA" aria-hidden="true"><div class="in"><div class="f">?</div><div class="k" id="cardAtext"></div></div></div>
+            <div class="bars-jail" id="jailA" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="years" id="yearsA"></div>
+            <div class="choice" id="choiceA">
+              <button class="btn" data-p="A" data-c="S">🤐 Stay silent</button>
+              <button class="btn alt" data-p="A" data-c="C">🗣️ Confess</button>
+              <span class="hide-note">Player B, don't look!</span>
+            </div>
+          </div>
+          <div class="vs" aria-hidden="true">VS</div>
+          <div class="player pb" id="playerB">
+            <span class="name">Player B</span>
+            <span class="face" aria-hidden="true">🐺</span>
+            <div class="card" id="cardB" aria-hidden="true"><div class="in"><div class="f">?</div><div class="k" id="cardBtext"></div></div></div>
+            <div class="bars-jail" id="jailB" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="years" id="yearsB"></div>
+            <div class="choice" id="choiceB" hidden>
+              <button class="btn" data-p="B" data-c="S">🤐 Stay silent</button>
+              <button class="btn alt" data-p="B" data-c="C">🗣️ Confess</button>
+              <span class="hide-note">Player A, don't look!</span>
+            </div>
+            <div class="cover" id="coverB">Wait for Player A…</div>
+          </div>
+        </div>
+
+        <p class="msg" id="pdMsg" aria-live="polite">Player A, choose in secret.</p>
+        <div class="row">
+          <button class="btn stage" id="pdNext" hidden>Next round</button>
+          <button class="btn reset" id="pdReset">↺ Reset game</button>
+        </div>
+      </div>
+
+      <div>
+        <table class="matrix" id="matrix">
+          <caption class="lbl" style="text-align:left">Years in prison: <span class="ya">A</span> / <span class="yb">B</span></caption>
+          <thead><tr><th scope="col"></th><th scope="col">B stays silent</th><th scope="col">B confesses</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">A stays silent</th><td data-cell="SS"><span class="ya">1</span> / <span class="yb">1</span></td><td data-cell="SC"><span class="ya">10</span> / <span class="yb">0</span></td></tr>
+            <tr><th scope="row">A confesses</th><td data-cell="CS"><span class="ya">0</span> / <span class="yb">10</span></td><td data-cell="CC"><span class="ya">5</span> / <span class="yb">5</span></td></tr>
+          </tbody>
+        </table>
+        <div class="totals">
+          <div>Player A total<br><b id="totA">0</b> years</div>
+          <div>Player B total<br><b id="totB">0</b> years</div>
+          <div>Rounds<br><b id="rounds">0</b></div>
+        </div>
+        <table class="history" aria-label="Round history">
+          <thead><tr><th>Round</th><th>A</th><th>B</th><th>Years A / B</th></tr></thead>
+          <tbody id="histBody"></tbody>
+        </table>
+        <div class="say">
+          <strong>Say it in English</strong>
+          <ul>
+            <li>I stayed silent because I trust you.</li>
+            <li>I confessed because I didn't want 10 years!</li>
+            <li>If we both stay silent, we only get 1 year.</li>
+            <li>Next time, I'm going to…</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h3>Challenge: play against the computer</h3>
+    <div class="cpu">
+      <p class="story">Now your partner is the computer. You can't see its choice, but you know how often it confesses. Play 10 rounds and try to get the fewest years.</p>
+      <label for="prob"><strong>The computer confesses <span id="probOut">30</span>% of the time</strong></label><br>
+      <input type="range" id="prob" min="0" max="100" step="10" value="30">
+      <div class="row">
+        <button class="btn" id="cpuS">🤐 I stay silent</button>
+        <button class="btn alt" id="cpuC">🗣️ I confess</button>
+        <button class="btn reset" id="cpuReset">↺ Reset</button>
+      </div>
+      <p class="lbl" style="margin:.2rem 0">Computer's choices (orange = confessed, green = silent):</p>
+      <div class="dots" id="cpuDots" aria-hidden="true"></div>
+      <p class="msg" id="cpuMsg" aria-live="polite">Round 1 of 10. Make your choice.</p>
+
+    </div>
+
+    <section class="why" aria-labelledby="why1h">
+      <h3 id="why1h">Why? The maths behind the game</h3>
+      <div class="mediate"><strong>Mediation challenge:</strong> read the explanation in English with your partner. Then one of you explains it to the class <strong>in Spanish</strong>, in your own words. Finally, check your explanation with the Spanish version.</div>
+      <div class="lang" role="group" aria-label="Language">
+        <button class="chip" data-lang1="en" aria-pressed="true">English</button>
+        <button class="chip" data-lang1="es" aria-pressed="false">Check in Spanish</button>
+      </div>
+      <div data-l1="en" lang="en">
+        <ol>
+          <li>Look at the game from Player A's point of view. A doesn't know what B will do, so A thinks about both possibilities.</li>
+          <li><strong>If B stays silent:</strong> A gets 1 year if A stays silent, but 0 years if A confesses. Confessing is better for A.</li>
+          <li><strong>If B confesses:</strong> A gets 10 years if A stays silent, but 5 years if A confesses. Confessing is better for A again.</li>
+          <li>So, whatever B does, confessing is better for A. B thinks exactly the same way.</li>
+          <li><strong>The surprise:</strong> if both of them confess, they get 5 years each. If both of them had stayed silent, they would only get 1 year each. Thinking only about yourself makes both of you lose. That is the <em>dilemma</em>.</li>
+        </ol>
+        <p><strong>With probabilities (the computer challenge):</strong> <span id="evEn"></span></p>
+      </div>
+      <div data-l1="es" lang="es" hidden>
+        <ol>
+          <li>Miramos el juego desde el punto de vista del jugador A. A no sabe qué hará B, así que piensa en las dos posibilidades.</li>
+          <li><strong>Si B se calla:</strong> A tiene 1 año si se calla, pero 0 años si confiesa. Al jugador A le conviene confesar.</li>
+          <li><strong>Si B confiesa:</strong> A tiene 10 años si se calla, pero 5 años si confiesa. Al jugador A le vuelve a convenir confesar.</li>
+          <li>Haga lo que haga B, a A le conviene confesar. Y B piensa exactamente igual.</li>
+          <li><strong>La sorpresa:</strong> si los dos confiesan, tienen 5 años cada uno. Si los dos se hubieran callado, tendrían solo 1 año cada uno. Pensar solo en uno mismo hace que pierdan los dos. Ese es el <em>dilema</em>.</li>
+        </ol>
+        <p><strong>Con probabilidades (el reto contra el ordenador):</strong> <span id="evEs"></span></p>
+      </div>
+    </section>
+  </section>
+
+  <!-- ================= GAME 2 ================= -->
+  <section class="panel" role="tabpanel" id="p2" aria-labelledby="t2" hidden>
+    <h2>Sofia's boxes</h2>
+    <div class="g2-top">
+    <div class="g2-left">
+    <div class="story">
+      <div data-level-text="A">
+        <p>Sofia is on a TV game show. There are three boxes. Only <strong>one</strong> box has €10,000 inside. The other two are empty.</p>
+        <p>Sofia chooses a box. The presenter <strong>knows</strong> where the money is. He opens one of the other boxes, and it is always <strong>empty</strong>: he <strong>never</strong> opens Sofia's box or the prize box.</p>
+        <p>Then he asks: "Do you want to <strong>keep</strong> your box or <strong>switch</strong>?"</p>
+        <p class="gloss">empty = vacía · knows = sabe · never = nunca · keep = quedarse con · switch = cambiar</p>
+      </div>
+      <div data-level-text="B" hidden>
+        <p>Sofia, a 16-year-old student, is taking part in a TV game show. In front of her there are three identical boxes, but only one of them contains a €10,000 prize.</p>
+        <p>After Sofia picks a box, the presenter, who knows exactly where the prize is, opens one of the other two boxes. It is empty, of course: he would never reveal the prize. Now only two boxes remain closed, and Sofia must decide: does she keep her first choice or switch to the other box? Is it really a 50/50 decision?</p>
+      </div>
+    </div>
+    <p class="goal">🎯 Goal: win the €10,000.</p>
+
+
+
+    <ol class="steps" id="mhSteps" aria-label="Game steps">
+      <li>Pick a box</li><li>The presenter opens an empty box</li><li>Keep or switch?</li><li>Open the box</li>
+    </ol>
+    </div>
+
+    <div class="studio">
+      <div class="boxes" id="boxes"></div>
+      <p class="msg" id="mhMsg" aria-live="polite">Step 1: pick a box.</p>
+      <div class="row" id="mhChoice" hidden>
+        <button class="btn stage" id="switchBtn">🔄 Switch</button>
+        <button class="btn alt" id="keepBtn">✋ Keep my box</button>
+      </div>
+      <div class="row">
+        <button class="btn stage" id="againBtn" hidden>Play again</button>
+        <button class="btn reset" id="mhReset">↺ Reset game and score</button>
+      </div>
+    </div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <h3 style="margin-top:.4rem">Our class score</h3>
+        <div class="score">
+          <div>🔄 Switched<b id="swW">0 / 0</b><span id="swP" class="lbl">wins / games</span></div>
+          <div>✋ Kept<b id="kpW">0 / 0</b><span id="kpP" class="lbl">wins / games</span></div>
+        </div>
+      </div>
+      <div class="say">
+        <strong>Say it in English</strong>
+        <ul>
+          <li>I'm pretty sure she should… / I'm not sure, but maybe…</li>
+          <li>It's 50/50… or is it?</li>
+          <li>If she switches, she will… / If she keeps it, she will…</li>
+          <li>Our data shows that…</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Prove it! Let the computer play 1,000 games</h3>
+    <p class="story">The computer plays 1,000 games always switching and 1,000 games always keeping.</p>
+    <div class="row"><button class="btn" id="simBtn">▶ Play 1,000 games</button><span id="simCount" class="lbl" aria-hidden="true"></span></div>
+    <div class="bars" aria-hidden="true">
+      <div class="bar"><span>Always switch</span><div class="track"><div class="fill sw" id="simS"></div></div><span class="num" id="simSn">–</span></div>
+      <div class="bar"><span>Always keep</span><div class="track"><div class="fill kp" id="simK"></div></div><span class="num" id="simKn">–</span></div>
+    </div>
+    <p id="simText" aria-live="polite"></p>
+
+    <section class="why" aria-labelledby="why2h">
+      <h3 id="why2h">Why? The maths behind the game</h3>
+      <div class="mediate"><strong>Mediation challenge:</strong> read the explanation in English with your partner. Then one of you explains it to the class <strong>in Spanish</strong>, in your own words. Finally, check your explanation with the Spanish version.</div>
+      <div class="lang" role="group" aria-label="Language">
+        <button class="chip" data-lang2="en" aria-pressed="true">English</button>
+        <button class="chip" data-lang2="es" aria-pressed="false">Check in Spanish</button>
+      </div>
+      <svg class="tree" viewBox="0 0 720 230" role="img" aria-labelledby="treeT">
+        <title id="treeT">Decision tree with 3 boxes. Sofia's first box has the prize 1 in 3 times; then switching loses. Her first box is empty 2 in 3 times; then the presenter must leave the prize box closed, and switching wins.</title>
+        <line class="ln" x1="110" y1="115" x2="300" y2="55"/><line class="ln" x1="110" y1="115" x2="300" y2="175"/>
+        <line class="ln" x1="420" y1="55" x2="560" y2="55"/><line class="ln" x1="420" y1="175" x2="560" y2="175"/>
+        <rect class="nd" x="20" y="90" width="90" height="50" rx="10"/><text x="65" y="120" text-anchor="middle">First pick</text>
+        <rect class="nd" x="300" y="30" width="120" height="50" rx="10"/><text x="360" y="52" text-anchor="middle">Prize box</text><text x="360" y="71" text-anchor="middle">1 in 3</text>
+        <rect class="nd" x="300" y="150" width="120" height="50" rx="10"/><text x="360" y="172" text-anchor="middle">Empty box</text><text x="360" y="191" text-anchor="middle">2 in 3</text>
+        <rect class="lose" x="560" y="30" width="150" height="50" rx="10"/><text x="635" y="60" text-anchor="middle" style="fill:#fff;font-weight:700">Switch: lose</text>
+        <rect class="win" x="560" y="150" width="150" height="50" rx="10"/><text x="635" y="180" text-anchor="middle" style="fill:#fff;font-weight:700">Switch: win</text>
+      </svg>
+      <div data-l2="en" lang="en">
+        <ol>
+          <li>When Sofia chooses her first box, she has only a <strong>1 in 3</strong> chance of choosing the prize. So there is a <strong>2 in 3</strong> chance that the prize is in one of the other two boxes.</li>
+          <li>The presenter knows where the prize is and always opens an empty box. This doesn't change Sofia's first chance: it is still 1 in 3.</li>
+          <li><strong>If her first box has the prize (1 in 3 times)</strong>, switching makes her lose.</li>
+          <li><strong>If her first box is empty (2 in 3 times)</strong>, the presenter has to leave the prize box closed. Switching makes her win.</li>
+          <li>So switching wins <strong>2 out of 3 times</strong>, and keeping wins only <strong>1 out of 3</strong>. It is not 50/50!</li>
+        </ol>
+      </div>
+      <div data-l2="es" lang="es" hidden>
+        <ol>
+          <li>Cuando Sofía elige su primera caja, solo tiene <strong>1 posibilidad entre 3</strong> de acertar. Por tanto, hay <strong>2 posibilidades entre 3</strong> de que el premio esté en una de las otras dos cajas.</li>
+          <li>El presentador sabe dónde está el premio y siempre abre una caja vacía. Eso no cambia la primera probabilidad de Sofía: sigue siendo 1 entre 3.</li>
+          <li><strong>Si su primera caja tenía el premio (1 de cada 3 veces)</strong>, al cambiar pierde.</li>
+          <li><strong>Si su primera caja estaba vacía (2 de cada 3 veces)</strong>, el presentador está obligado a dejar cerrada la caja del premio. Al cambiar, gana.</li>
+          <li>Así que cambiar gana <strong>2 de cada 3 veces</strong> y quedarse gana solo <strong>1 de cada 3</strong>. ¡No es 50/50!</li>
+        </ol>
+      </div>
+
+      <div class="bonus">
+        <h3 style="margin-top:0">Bonus: imagine 52 boxes</h3>
+        <p class="story">Still not sure? Imagine 52 boxes, like a deck of cards. Sofia picks one: she has only a 1 in 52 chance. The presenter opens <strong>50 empty boxes</strong> and leaves only one other box closed. Would you keep your box or switch? Try it once!</p>
+        <div class="row"><button class="btn alt" id="bonusOpen">Try it with 52 boxes</button></div>
+        <div id="bonusGame" hidden>
+          <div class="boxes many" id="bBoxes"></div>
+          <p class="msg" id="bMsg" aria-live="polite"></p>
+          <div class="row" id="bChoice" hidden>
+            <button class="btn stage" id="bSwitch">🔄 Switch</button>
+            <button class="btn alt" id="bKeep">✋ Keep my box</button>
+          </div>
+          <div class="row"><button class="btn reset" id="bAgain" hidden>↺ Try again</button></div>
+          <p id="bWhy" hidden>With 52 boxes, keeping wins only 1 out of 52 times and switching wins 51 out of 52 times. It's the same idea as with 3 boxes: keeping wins 1 out of 3, switching wins 2 out of 3. / <span lang="es">Con 52 cajas, quedarse gana solo 1 de cada 52 veces y cambiar gana 51 de cada 52. Es la misma idea que con 3 cajas.</span></p>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <footer>Game On! · Learning situation "Should Sofia switch?" · English 4.º ESO · IES Medina Albaida. Works with keyboard and screen readers.</footer>
+</div>
+
+<div class="sr" aria-live="assertive" id="announce"></div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const announce = t => { const a = $('#announce'); a.textContent = ''; setTimeout(() => a.textContent = t, 60); };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = ms => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+
+  /* ---------- herramientas ---------- */
+  $$('[data-scale]').forEach(b => b.addEventListener('click', () => {
+    document.documentElement.style.setProperty('--scale', b.dataset.scale);
+    $$('[data-scale]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  }));
+  $$('[data-level]').forEach(b => b.addEventListener('click', () => {
+    stopReading();
+    $$('[data-level]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    $$('[data-level-text]').forEach(d => d.hidden = d.dataset.levelText !== b.dataset.level);
+  }));
+  $('#contrast').addEventListener('click', e => {
+    const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', on);
+    if (on) document.documentElement.setAttribute('data-contrast', 'high');
+    else document.documentElement.removeAttribute('data-contrast');
+  });
+  /* ---------- lectura en voz alta: pausa y velocidad ---------- */
+  const RATES = { slow: .7, normal: 1 };
+  const speechOK = 'speechSynthesis' in window;
+  const readBtn = $('#readBtn'), pauseBtn = $('#pauseBtn');
+  let rate = RATES.normal, sentences = [], pos = 0, reading = 'idle', session = 0, currentUtt = null; // reading: idle | playing | paused
+
+  function pauseUI() {
+    pauseBtn.disabled = reading === 'idle';
+    pauseBtn.innerHTML = reading === 'paused' ? '<span aria-hidden="true">▶</span> Resume' : '<span aria-hidden="true">⏸</span> Pause';
+    if (reading === 'idle' && document.activeElement === pauseBtn) readBtn.focus();
+  }
+  function stopReading() {
+    session++; currentUtt = null;
+    if (speechOK) speechSynthesis.cancel();
+    reading = 'idle'; sentences = []; pos = 0; pauseUI();
+  }
+  function speakAt(i) {
+    const my = ++session; pos = i;
+    if (i >= sentences.length) { reading = 'idle'; sentences = []; pos = 0; currentUtt = null; pauseUI(); return; }
+    const u = currentUtt = new SpeechSynthesisUtterance(sentences[i]);
+    u.lang = 'en-GB'; u.rate = rate;
+    const v = speechSynthesis.getVoices().find(v => v.lang.startsWith('en')); if (v) u.voice = v;
+    u.onend = () => { if (my === session) speakAt(i + 1); };
+    u.onerror = () => { if (my === session) stopReading(); };
+    speechSynthesis.speak(u);
+  }
+  // empieza (o continúa) desde la frase i; la pequeña espera evita que algunos navegadores ignoren el speak() justo después de cancel()
+  function readFrom(i) {
+    const my = ++session; pos = i; speechSynthesis.cancel();
+    setTimeout(() => { if (my === session) speakAt(i); }, 60);
+  }
+  function storyChunks() {
+    const panel = $('.panel:not([hidden])');
+    const parts = [...panel.querySelectorAll('[data-level-text]:not([hidden]) p:not(.gloss), .goal')].map(p => p.textContent.replace('🎯', '').trim());
+    return parts.flatMap(t => t.match(/[^.!?]+(?:[.!?]+["”’)]*|$)/g) || [t]).map(x => x.trim()).filter(x => /[A-Za-z0-9]/.test(x));
+  }
+  readBtn.addEventListener('click', () => {
+    if (!speechOK) { announce('Reading aloud is not available in this browser.'); return; }
+    sentences = storyChunks();
+    reading = 'playing'; pauseUI(); readFrom(0);
+  });
+  pauseBtn.addEventListener('click', () => {
+    if (reading === 'playing') {
+      session++; speechSynthesis.cancel(); reading = 'paused'; pauseUI(); announce('Paused.');
+    } else if (reading === 'paused') {
+      reading = 'playing'; pauseUI(); readFrom(pos);   // repite la frase en la que se quedó
+    }
+  });
+  $$('[data-rate]').forEach(b => b.addEventListener('click', () => {
+    rate = RATES[b.dataset.rate];
+    $$('[data-rate]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    announce('Reading speed: ' + b.dataset.rate + '.');
+    if (reading === 'playing') readFrom(pos);   // sigue con la nueva velocidad desde la frase actual
+  }));
+  let tLeft = 300, tId = null; const tBtn = $('#timerBtn');
+  const fmt = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  const stopTimer = () => { clearInterval(tId); tId = null; tLeft = 300; tBtn.textContent = '⏱ 5:00'; };
+  tBtn.addEventListener('click', () => {
+    if (tId) { stopTimer(); return; }
+    tId = setInterval(() => {
+      tLeft--; tBtn.textContent = '⏱ ' + fmt(tLeft);
+      if (tLeft === 60) announce('One minute left.');
+      if (tLeft <= 0) { stopTimer(); announce('Time is up! Share your ideas.'); }
+    }, 1000);
+    announce('Timer started: five minutes.');
+  });
+
+  /* ---------- pestañas ---------- */
+  const tabs = $$('[role=tab]');
+  const show = t => { stopReading(); tabs.forEach(x => { const on = x === t; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1; $('#' + x.getAttribute('aria-controls')).hidden = !on; }); t.focus(); };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => show(t));
+    t.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') show(tabs[(i + 1) % tabs.length]);
+      if (e.key === 'ArrowLeft') show(tabs[(i - 1 + tabs.length) % tabs.length]);
+    });
+  });
+  const setStep = (el, n) => [...el.children].forEach((li, i) => { li.className = i < n ? 'done' : (i === n ? 'now' : ''); if (i === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current'); });
+
+  /* ================= GAME 1 ================= */
+  const YEARS = { SS: [1,1], SC: [10,0], CS: [0,10], CC: [5,5] };
+  const LABEL = { S: '🤐 Silent', C: '🗣️ Confessed' };
+  const WORD = { S: 'stayed silent', C: 'confessed' };
+  let pick = { A: null, B: null }, totals = { A: 0, B: 0 }, round = 0;
+
+  function pdNewRound() {
+    pick = { A: null, B: null };
+    ['A','B'].forEach(p => {
+      $('#card' + p).classList.remove('flip'); $('#jail' + p).classList.remove('on');
+      $('#years' + p).innerHTML = '';
+    });
+    $$('#matrix td').forEach(td => td.classList.remove('hit'));
+    $('#choiceA').hidden = false; $('#choiceB').hidden = true; $('#coverB').hidden = false;
+    $('#coverB').textContent = 'Wait for Player A…';
+    $('#pdNext').hidden = true;
+    $('#pdMsg').textContent = 'Step 1: Player A, choose in secret. Player B, look away!';
+    setStep($('#pdSteps'), 0);
+  }
+  $$('#choiceA [data-c], #choiceB [data-c]').forEach(b => b.addEventListener('click', () => {
+    const p = b.dataset.p; pick[p] = b.dataset.c;
+    if (p === 'A') {
+      $('#choiceA').hidden = true;
+      $('#cardAtext').textContent = LABEL[pick.A];
+      $('#coverB').hidden = true; $('#choiceB').hidden = false;
+      $('#pdMsg').textContent = 'Step 2: Player A has chosen. Now Player B, choose in secret.';
+      setStep($('#pdSteps'), 1);
+      $('#choiceB button').focus();
+    } else {
+      $('#choiceB').hidden = true;
+      $('#cardBtext').textContent = LABEL[pick.B];
+      pdReveal();
+    }
+  }));
+  async function pdReveal() {
+    setStep($('#pdSteps'), 2);
+    $('#pdMsg').textContent = '3… 2… 1… Reveal!';
+    await wait(700);
+    $('#cardA').classList.add('flip'); await wait(350); $('#cardB').classList.add('flip');
+    await wait(650);
+    const key = pick.A + pick.B, [ya, yb] = YEARS[key];
+    $(`#matrix td[data-cell="${key}"]`).classList.add('hit');
+    // contador de años
+    const steps = Math.max(ya, yb);
+    for (let i = 0; i <= steps; i++) {
+      const a = Math.min(i, ya), b = Math.min(i, yb);
+      $('#yearsA').innerHTML = `${a}<small>${a === 1 ? 'year' : 'years'}</small>`;
+      $('#yearsB').innerHTML = `${b}<small>${b === 1 ? 'year' : 'years'}</small>`;
+      await wait(90);
+    }
+    if (ya > 0) $('#jailA').classList.add('on'); else $('#yearsA').innerHTML = `0<small>FREE! 🎉</small>`;
+    if (yb > 0) $('#jailB').classList.add('on'); else $('#yearsB').innerHTML = `0<small>FREE! 🎉</small>`;
+    round++; totals.A += ya; totals.B += yb;
+    $('#totA').textContent = totals.A; $('#totB').textContent = totals.B; $('#rounds').textContent = round;
+    $('#histBody').insertAdjacentHTML('beforeend', `<tr><td>${round}</td><td>${LABEL[pick.A]}</td><td>${LABEL[pick.B]}</td><td>${ya} / ${yb}</td></tr>`);
+    const fate = y => y === 0 ? 'goes free' : `gets ${y} year${y > 1 ? 's' : ''} in prison`;
+    let comment = '';
+    if (key === 'SS') comment = ' You trusted each other: great teamwork!';
+    if (key === 'CC') comment = ' You both protected yourselves… and you both lost.';
+    if (key === 'SC' || key === 'CS') comment = ' Someone was betrayed!';
+    $('#pdMsg').textContent = `A ${WORD[pick.A]} and B ${WORD[pick.B]}. A ${fate(ya)} and B ${fate(yb)}.${comment}`;
+    setStep($('#pdSteps'), 3);
+    $('#pdNext').hidden = false; $('#pdNext').focus();
+  }
+  $('#pdNext').addEventListener('click', pdNewRound);
+  $('#pdReset').addEventListener('click', () => {
+    totals = { A: 0, B: 0 }; round = 0;
+    $('#totA').textContent = 0; $('#totB').textContent = 0; $('#rounds').textContent = 0; $('#histBody').innerHTML = '';
+    pdNewRound(); announce('Game reset.');
+  });
+  pdNewRound();
+
+  // contra el ordenador
+  const prob = $('#prob'); let cpu = { r: 0, years: 0 };
+  function evText() {
+    const p = prob.value / 100, s = p * 10 + (1 - p) * 1, c = p * 5;
+    const pc = prob.value, q = 100 - prob.value, f = x => x.toFixed(1);
+    $('#evEn').textContent = `If the computer confesses ${pc}% of the time, staying silent gives you ${pc}% × 10 + ${q}% × 1 = ${f(s)} years on average, and confessing gives you ${pc}% × 5 + ${q}% × 0 = ${f(c)} years on average. For you alone, confessing is safer.`;
+    $('#evEs').textContent = `Si el ordenador confiesa el ${pc}% de las veces, callarte te da de media ${pc}% × 10 + ${q}% × 1 = ${f(s).replace('.', ',')} años, y confesar te da ${pc}% × 5 + ${q}% × 0 = ${f(c).replace('.', ',')} años. Para ti solo, confesar es más seguro.`;
+  }
+  function cpuReset() {
+    cpu = { r: 0, years: 0 }; $('#cpuDots').innerHTML = ''; $('#cpuS').disabled = $('#cpuC').disabled = false;
+    $('#cpuMsg').textContent = 'Round 1 of 10. Make your choice.';
+  }
+  prob.addEventListener('input', () => { $('#probOut').textContent = prob.value; evText(); cpuReset(); });
+  function cpuPlay(me) {
+    if (cpu.r >= 10) return;
+    const comp = Math.random() < prob.value / 100 ? 'C' : 'S';
+    const y = YEARS[me + comp][0]; cpu.r++; cpu.years += y;
+    $('#cpuDots').insertAdjacentHTML('beforeend', `<span class="dot ${comp === 'C' ? 'c' : 's'}">${cpu.r}</span>`);
+    let m = `Round ${cpu.r}: you ${WORD[me]} and the computer ${WORD[comp]}. You get ${y} year${y === 1 ? '' : 's'}. Total: ${cpu.years} years.`;
+    if (cpu.r === 10) { m += ` Game over! You got ${cpu.years} years in 10 rounds. Can a classmate beat you?`; $('#cpuS').disabled = $('#cpuC').disabled = true; }
+    $('#cpuMsg').textContent = m;
+  }
+  $('#cpuS').addEventListener('click', () => cpuPlay('S'));
+  $('#cpuC').addEventListener('click', () => cpuPlay('C'));
+  $('#cpuReset').addEventListener('click', () => { cpuReset(); announce('Challenge reset.'); });
+  evText();
+
+  // selector de idioma de las explicaciones
+  [['lang1','l1'],['lang2','l2']].forEach(([btn, box]) => {
+    $$(`[data-${btn}]`).forEach(b => b.addEventListener('click', () => {
+      $$(`[data-${btn}]`).forEach(x => x.setAttribute('aria-pressed', x === b));
+      $$(`[data-${box}]`).forEach(d => d.hidden = d.dataset[box] !== b.dataset[btn]);
+    }));
+  });
+
+  /* ================= GAME 2 ================= */
+  let N = 3, prize, mine, other, phase;
+  const score = { sw: [0,0], kp: [0,0] };
+  const boxesEl = $('#boxes');
+  const boxSVG = `<svg viewBox="0 0 160 170" aria-hidden="true">
+      <ellipse class="shadow" cx="80" cy="160" rx="62" ry="7"/>
+      <path class="inside" d="M24 62 L136 62 L126 48 L34 48 Z"/>
+      <g class="loot">
+        <rect class="note" x="52" y="36" width="56" height="50" rx="4" transform="rotate(-12 80 61)"/>
+        <rect class="note" x="52" y="36" width="56" height="50" rx="4" transform="rotate(9 80 61)"/>
+        <rect class="note" x="52" y="38" width="56" height="50" rx="4"/>
+        <text class="euro" x="80" y="72" text-anchor="middle" font-size="26" font-weight="700">€</text>
+        <circle class="coin" cx="50" cy="78" r="8"/><circle class="coin" cx="112" cy="74" r="8"/>
+      </g>
+      <rect class="body" x="18" y="62" width="124" height="92" rx="7"/>
+      <rect class="shade" x="21" y="65" width="20" height="86" fill="#fff" opacity=".13"/>
+      <rect class="shade" x="120" y="65" width="19" height="86" fill="#000" opacity=".2"/>
+      <rect class="shade" x="21" y="132" width="118" height="19" fill="#000" opacity=".12"/>
+      <rect class="plate" x="50" y="90" width="60" height="42" rx="9"/>
+      <text class="mark" x="80" y="121" text-anchor="middle" font-size="34" font-weight="700">?</text>
+      <g transform="translate(30 30)"><path class="spark" d="M0 -8 L2.4 -2.4 L8 0 L2.4 2.4 L0 8 L-2.4 2.4 L-8 0 L-2.4 -2.4 Z"/></g>
+      <g transform="translate(132 26)"><path class="spark" d="M0 -8 L2.4 -2.4 L8 0 L2.4 2.4 L0 8 L-2.4 2.4 L-8 0 L-2.4 -2.4 Z"/></g>
+      <g transform="translate(22 70)"><path class="spark" d="M0 -8 L2.4 -2.4 L8 0 L2.4 2.4 L0 8 L-2.4 2.4 L-8 0 L-2.4 -2.4 Z"/></g>
+      <g transform="translate(140 64)"><path class="spark" d="M0 -8 L2.4 -2.4 L8 0 L2.4 2.4 L0 8 L-2.4 2.4 L-8 0 L-2.4 -2.4 Z"/></g>
+      <g class="lid">
+        <rect class="lidr" x="10" y="44" width="140" height="24" rx="6"/>
+        <rect class="shade" x="14" y="47" width="132" height="7" rx="3.5" fill="#fff" opacity=".22"/>
+        <ellipse class="bow" cx="64" cy="38" rx="15" ry="8" transform="rotate(-18 64 38)"/>
+        <ellipse class="bow" cx="96" cy="38" rx="15" ry="8" transform="rotate(18 96 38)"/>
+        <circle class="bow" cx="80" cy="41" r="6"/>
+      </g>
+    </svg>`;
+  const nameOf = i => N === 3 ? 'ABC'[i] : String(i + 1);
+
+  function build() {
+    boxesEl.classList.toggle('many', N > 3);
+    boxesEl.innerHTML = Array.from({ length: N }, (_, i) =>
+      `<button class="box" data-i="${i}" style="--i:${i}" aria-label="Box ${nameOf(i)}">${boxSVG}<span class="tag">${N === 3 ? 'Box ' : ''}${nameOf(i)}</span><span class="state"></span></button>`).join('');
+    $$('.box').forEach(b => b.addEventListener('click', () => choose(+b.dataset.i)));
+  }
+  const boxes = () => $$('.box');
+  function setBox(i, cls, state, mark) {
+    const b = boxes()[i]; if (cls) b.classList.add(...cls.split(' '));
+    if (state !== undefined) b.querySelector('.state').textContent = state;
+    if (mark !== undefined) { const m = b.querySelector('.mark'); m.textContent = mark; m.setAttribute('fill', mark === '€' ? 'var(--stage)' : 'var(--muted)'); }
+    b.setAttribute('aria-label', `Box ${nameOf(i)}${state ? ', ' + state : ''}`);
+  }
+  function mhNew() {
+    prize = Math.floor(Math.random() * N); mine = null; other = null; phase = 'pick';
+    build(); $('#mhChoice').hidden = true; $('#againBtn').hidden = true;
+    $('#mhMsg').textContent = 'Step 1: pick a box. Only one of the three boxes has €10,000.';
+    setStep($('#mhSteps'), 0);
+  }
+  async function choose(i) {
+    if (phase !== 'pick') return; phase = 'busy';
+    mine = i; boxes().forEach(b => b.disabled = true);
+    setBox(i, 'mine', "Sofia's box");
+    setStep($('#mhSteps'), 1);
+    $('#mhMsg').textContent = `Sofia picks box ${nameOf(i)}. The presenter knows where the money is…`;
+    // el presentador deja cerrada una caja: la del premio, o una al azar si Sofía acertó
+    if (mine !== prize) other = prize;
+    else { const rest = [...Array(N).keys()].filter(k => k !== mine); other = rest[Math.floor(Math.random() * rest.length)]; }
+    await wait(900);
+    const toOpen = [...Array(N).keys()].filter(k => k !== mine && k !== other);
+    for (const k of toOpen) { setBox(k, 'open gone', 'empty', ''); await wait(N > 3 ? 45 : 500); }
+    setBox(other, 'other', 'still closed');
+    const opened = toOpen.length === 1 ? `box ${nameOf(toOpen[0])}` : `${toOpen.length} empty boxes`;
+    setStep($('#mhSteps'), 2);
+    $('#mhMsg').textContent = `He opened ${opened}${toOpen.length === 1 ? ': it is empty' : ''}! Only two boxes are still closed: box ${nameOf(mine)} (Sofia's) and box ${nameOf(other)}. Keep or switch?`;
+    $('#mhChoice').hidden = false; phase = 'decide'; $('#switchBtn').focus();
+  }
+  async function decide(sw) {
+    if (phase !== 'decide') return; phase = 'done';
+    $('#mhChoice').hidden = true;
+    const final = sw ? other : mine, win = final === prize;
+    setStep($('#mhSteps'), 3);
+    $('#mhMsg').textContent = sw ? `Sofia switches to box ${nameOf(other)}. Opening…` : `Sofia keeps box ${nameOf(mine)}. Opening…`;
+    await wait(800);
+    [mine, other].forEach(k => setBox(k, 'open' + (k === prize ? ' prize' : ''), k === prize ? '€10,000!' : 'empty', k === prize ? '€' : ''));
+    const k = sw ? 'sw' : 'kp'; score[k][1]++; if (win) score[k][0]++;
+    paintScore();
+    if (win) burst(); else boxes()[final].classList.add('shake');
+    $('#mhMsg').textContent = `${win ? '🎉 Sofia WINS €10,000!' : '😢 Sofia loses.'} She ${sw ? 'switched' : 'kept her box'}. The money was in box ${nameOf(prize)}.`;
+    $('#againBtn').hidden = false; $('#againBtn').focus();
+  }
+  function burst() {
+    if (reduce) return;
+    const studio = $('.studio'), layer = document.createElement('div');
+    layer.className = 'confetti'; layer.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 34; i++) {
+      const p = document.createElement('i'); p.className = 'conf c' + (i % 4);
+      p.style.setProperty('--dx', (Math.random() * 640 - 320) + 'px');
+      p.style.setProperty('--dy', (Math.random() * 300 - 90) + 'px');
+      p.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+      p.style.animationDelay = (Math.random() * 120) + 'ms';
+      layer.appendChild(p);
+    }
+    studio.appendChild(layer); setTimeout(() => layer.remove(), 1800);
+  }
+  function paintScore() {
+    const pc = ([w, g]) => g ? ` (${Math.round(w / g * 100)}% wins)` : '';
+    $('#swW').textContent = `${score.sw[0]} / ${score.sw[1]}`; $('#swP').textContent = 'wins / games' + pc(score.sw);
+    $('#kpW').textContent = `${score.kp[0]} / ${score.kp[1]}`; $('#kpP').textContent = 'wins / games' + pc(score.kp);
+  }
+  $('#switchBtn').onclick = () => decide(true);
+  $('#keepBtn').onclick = () => decide(false);
+  $('#againBtn').onclick = mhNew;
+  $('#mhReset').onclick = () => { score.sw = [0,0]; score.kp = [0,0]; paintScore(); mhNew(); clearSim(); announce('Game and score reset.'); };
+
+
+  // 1.000 partidas
+  function clearSim() { ['#simS','#simK'].forEach(s => $(s).style.width = '0'); $('#simSn').textContent = $('#simKn').textContent = '–'; $('#simText').textContent = ''; $('#simCount').textContent = ''; $('#simBtn').textContent = '▶ Play 1,000 games'; }
+  $('#simBtn').addEventListener('click', () => {
+    const G = 1000; let n = 0, ws = 0, wk = 0; $('#simBtn').disabled = true; $('#simText').textContent = '';
+    const step = () => {
+      for (let j = 0; j < (reduce ? G : 20) && n < G; j++, n++) {
+        const pr = Math.floor(Math.random() * N), pk = Math.floor(Math.random() * N);
+        if (pr === pk) wk++; else ws++;
+      }
+      $('#simS').style.width = (ws / n * 100) + '%'; $('#simSn').textContent = Math.round(ws / n * 100) + '%';
+      $('#simK').style.width = (wk / n * 100) + '%'; $('#simKn').textContent = Math.round(wk / n * 100) + '%';
+      $('#simCount').textContent = `${n} games`;
+      if (n < G) requestAnimationFrame(step);
+      else {
+        $('#simBtn').disabled = false; $('#simBtn').textContent = '▶ Play 1,000 more';
+        $('#simText').textContent = `Always switching won ${ws} of ${G} games (${Math.round(ws/G*100)}%) and always keeping won ${wk} of ${G} (${Math.round(wk/G*100)}%). The maths says: switching wins 2 out of 3 times. Does this match what you thought at the beginning?`;
+      }
+    };
+    step();
+  });
+
+  // bonus: 52 cajas
+  let bN = 52, bPrize, bMine, bOther, bPhase;
+  const bBox = () => $$('#bBoxes .box');
+  function bNew() {
+    bPrize = Math.floor(Math.random() * bN); bMine = bOther = null; bPhase = 'pick';
+    $('#bBoxes').innerHTML = Array.from({ length: bN }, (_, i) => `<button class="box" data-i="${i}" aria-label="Box ${i + 1}"><span class="tag">${i + 1}</span><span class="state"></span></button>`).join('');
+    bBox().forEach(b => b.addEventListener('click', () => bChoose(+b.dataset.i)));
+    $('#bChoice').hidden = true; $('#bAgain').hidden = true; $('#bWhy').hidden = true;
+    $('#bMsg').textContent = 'Pick one box out of 52. Only one has €10,000.';
+  }
+  const bSet = (i, cls, label) => { const b = bBox()[i]; b.classList.add(...cls.split(' ')); b.setAttribute('aria-label', `Box ${i + 1}, ${label}`); };
+  async function bChoose(i) {
+    if (bPhase !== 'pick') return; bPhase = 'busy'; bMine = i;
+    bBox().forEach(b => b.disabled = true); bSet(i, 'mine', "Sofia's box");
+    if (bMine !== bPrize) bOther = bPrize;
+    else { const r = [...Array(bN).keys()].filter(k => k !== bMine); bOther = r[Math.floor(Math.random() * r.length)]; }
+    $('#bMsg').textContent = `You picked box ${i + 1}. The presenter starts opening empty boxes…`;
+    await wait(600);
+    for (const k of [...Array(bN).keys()].filter(k => k !== bMine && k !== bOther)) { bSet(k, 'open gone', 'empty'); await wait(40); }
+    bSet(bOther, 'other', 'still closed');
+    $('#bMsg').textContent = `He opened 50 empty boxes! Only box ${bMine + 1} (yours) and box ${bOther + 1} are still closed. Keep or switch?`;
+    $('#bChoice').hidden = false; bPhase = 'decide'; $('#bSwitch').focus();
+  }
+  async function bDecide(sw) {
+    if (bPhase !== 'decide') return; bPhase = 'done'; $('#bChoice').hidden = true;
+    const fin = sw ? bOther : bMine, win = fin === bPrize;
+    bSet(bPrize, 'prize', 'prize');
+    $('#bMsg').textContent = `${win ? '🎉 You win!' : '😢 You lose.'} You ${sw ? 'switched' : 'kept your box'}. The money was in box ${bPrize + 1}.`;
+    $('#bWhy').hidden = false; $('#bAgain').hidden = false; $('#bAgain').focus();
+  }
+  $('#bSwitch').onclick = () => bDecide(true);
+  $('#bKeep').onclick = () => bDecide(false);
+  $('#bAgain').onclick = bNew;
+  $('#bonusOpen').onclick = () => { $('#bonusGame').hidden = false; $('#bonusOpen').hidden = true; bNew(); };
+
+  mhNew();
+})();
+</script>
+</body>
+</html>
